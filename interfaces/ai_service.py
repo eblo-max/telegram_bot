@@ -1,49 +1,25 @@
-# Created by setup script
-
 from abc import ABC, abstractmethod
-from typing import Dict, Optional, List
+from typing import Dict, List, Optional
 from uuid import UUID
-from dark_archive.application.dto.case_dto import CaseDTO, EvidenceDTO, SuspectDTO
-from dark_archive.domain.models.case import Case, Evidence, Location
+
+from dark_archive.domain.entities.case import Case
+from dark_archive.domain.entities.evidence import Evidence
+from dark_archive.domain.entities.location import Location
+from dark_archive.domain.entities.suspect import Suspect
 
 
-class IAIService(ABC):
-    """Интерфейс для работы с AI сервисом"""
+class AIService(ABC):
+    """Базовый интерфейс для работы с AI сервисами"""
 
     @abstractmethod
-    async def generate_case(self, difficulty: int) -> Dict:
-        """
-        Генерирует новое расследование заданной сложности
+    async def generate_case(self, difficulty: int = 5) -> Optional[Dict]:
+        """Генерирует новое расследование
 
         Args:
             difficulty: Сложность расследования (1-10)
 
         Returns:
-            Dict с деталями расследования:
-            {
-                "title": str,
-                "description": str,
-                "initial_location": {
-                    "name": str,
-                    "description": str,
-                    "risk_level": int
-                },
-                "locations": [
-                    {
-                        "name": str,
-                        "description": str,
-                        "risk_level": int,
-                        "evidence": [
-                            {
-                                "name": str,
-                                "description": str,
-                                "type": str,
-                                "importance": int
-                            }
-                        ]
-                    }
-                ]
-            }
+            Optional[Dict]: Словарь с данными расследования или None в случае ошибки
         """
         pass
 
@@ -109,4 +85,63 @@ class IAIService(ABC):
         Returns:
             str: Подсказка для игрока
         """
+        pass
+
+    @abstractmethod
+    async def analyze_suspect(
+        self, case: Case, suspect: Suspect, evidence: List[Evidence]
+    ) -> Dict[str, str]:
+        """Анализирует подозреваемого
+
+        Args:
+            case: Текущее дело
+            suspect: Подозреваемый для анализа
+            evidence: Список улик, связанных с подозреваемым
+
+        Returns:
+            Dict[str, str]: Результаты анализа
+        """
+        pass
+
+    @abstractmethod
+    async def generate_interrogation(
+        self, case: Case, suspect: Suspect, evidence: List[Evidence]
+    ) -> List[Dict[str, str]]:
+        """Генерирует диалог допроса
+
+        Args:
+            case: Текущее дело
+            suspect: Подозреваемый для допроса
+            evidence: Список улик для использования в допросе
+
+        Returns:
+            List[Dict[str, str]]: Список реплик допроса
+        """
+        pass
+
+
+class IAIService(ABC):
+    """Интерфейс для сервиса искусственного интеллекта."""
+
+    @abstractmethod
+    async def analyze_text(
+        self, text: str, instruction: str, context: Optional[Dict[str, str]] = None
+    ) -> Optional[Dict]:
+        """Анализирует текст с помощью AI."""
+        pass
+
+    @abstractmethod
+    async def generate_text(
+        self,
+        prompt: str,
+        max_tokens: int = 1000,
+        temperature: float = 0.7,
+        context: Optional[Dict[str, str]] = None,
+    ) -> Optional[str]:
+        """Генерирует текст с помощью AI."""
+        pass
+
+    @abstractmethod
+    async def get_embedding(self, text: str) -> Optional[list[float]]:
+        """Получает эмбеддинги для текста."""
         pass
