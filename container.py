@@ -1,7 +1,24 @@
-from dependency_injector import containers, providers
-import logging
 import os
+from dependency_injector import containers, providers
+from telegram.ext import Application
+import logging
 
+from dark_archive.application.interfaces.ai_service import IAIService
+from dark_archive.application.interfaces.case_repository import ICaseRepository
+from dark_archive.application.interfaces.telegram_client import ITelegramClient
+from dark_archive.application.use_cases.case_use_cases import (
+    CreateCaseUseCase,
+    GetCaseUseCase,
+    ListCasesUseCase,
+)
+from dark_archive.application.use_cases.build_theory import BuildTheoryUseCase
+from dark_archive.application.use_cases.examine_evidence import (
+    ExamineEvidenceUseCase,
+)
+from dark_archive.application.use_cases.solve_case import SolveCaseUseCase
+from dark_archive.application.use_cases.start_investigation import (
+    StartInvestigationUseCase,
+)
 from dark_archive.infrastructure.api.telegram.bot_client import (
     TelegramClientAdapter,
 )
@@ -27,10 +44,21 @@ class Container(containers.DeclarativeContainer):
         __name__,
     )
 
-    # Инфраструктурный слой
+    # Репозитории
+    case_repository = providers.Singleton(
+        MemoryCaseRepository,
+    )
+
+    # AI сервис
+    claude_service = providers.Singleton(
+        ClaudeService,
+        api_key=config.anthropic.api_key,
+    )
+
+    # Клиент Telegram
     telegram_client = providers.Singleton(
         TelegramClientAdapter,
-        token=os.environ["TELEGRAM_TOKEN"],
+        token=config.telegram.token,
     )
 
     telegram_gateway = providers.Singleton(
@@ -38,13 +66,21 @@ class Container(containers.DeclarativeContainer):
         client=telegram_client,
     )
 
-    claude_service = providers.Singleton(
-        ClaudeService,
-        api_key=os.environ["ANTHROPIC_API_KEY"],
+    # Use cases
+    create_case_use_case = providers.Singleton(
+        CreateCaseUseCase,
+        case_repository=case_repository,
+        ai_service=claude_service,
     )
 
-    case_repository = providers.Singleton(
-        MemoryCaseRepository,
+    get_case_use_case = providers.Singleton(
+        GetCaseUseCase,
+        case_repository=case_repository,
+    )
+
+    list_cases_use_case = providers.Singleton(
+        ListCasesUseCase,
+        case_repository=case_repository,
     )
 
     # Доменный слой
